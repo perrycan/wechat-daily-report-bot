@@ -41,7 +41,7 @@ English: [README.md](README.md)
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│ 指令层   聊天口令「接龙/催办/汇总/状态」→ CLI/API                    │  openclaw_command_router.py
+│ 指令层   聊天口令「start/remind/summarize/status」→ CLI/API                    │  openclaw_command_router.py
 ├──────────────────────────────────────────────────────────────────┤
 │ 接口层   FastAPI :8000  +  schedule 定时线程                        │  api_server.py
 ├──────────────────────────────────────────────────────────────────┤
@@ -113,8 +113,8 @@ python api_server.py
 |---|---|
 | **定时** | 工作日自动：`16:30` 发接龙 · `17:10` 催办 · `17:35` 汇总 |
 | **HTTP API** | `GET /jielong` · `/cuiban` · `/huizong` · `/status`；`POST /send_msg`；`GET/POST /rules` |
-| **CLI** | `python openclaw_command_router.py 发接龙\|催办\|汇总\|状态 [--json]` |
-| **聊天口令** | 微信内发 `接龙/催办/汇总/状态`（经 `scripts/` 中的可选网关补丁） |
+| **CLI** | `python openclaw_command_router.py start\|remind\|summarize\|status [--json]` |
+| **聊天口令** | 微信内发 `start/remind/summarize/status`（经 `scripts/` 中的可选网关补丁） |
 
 ## 更新汇总规则
 

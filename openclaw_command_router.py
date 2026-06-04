@@ -2,11 +2,11 @@
 """
 OpenClaw 指令路由器（本地直连版）
 
-用法：
-  python openclaw_command_router.py 发接龙
-  python openclaw_command_router.py 催办
-  python openclaw_command_router.py 汇总
-  python openclaw_command_router.py 状态
+用法 / usage:
+  python openclaw_command_router.py start       # 发起接龙 / start roll-call
+  python openclaw_command_router.py remind      # 催办未交 / remind non-submitters
+  python openclaw_command_router.py summarize   # 汇总私发 / summarize to manager
+  python openclaw_command_router.py status      # 查看状态 / show status
 """
 import json
 import sys
@@ -20,15 +20,18 @@ from bot_core import send_jielong, cuiban, huizong, get_participated, get_leave_
 
 
 ALIASES = {
-    "发接龙": "jielong",
-    "接龙": "jielong",
-    "jielong": "jielong",
-    "催办": "cuiban",
-    "cuiban": "cuiban",
-    "汇总": "huizong",
-    "huizong": "huizong",
-    "状态": "status",
+    # English commands (canonical)
+    "start": "jielong",
+    "rollcall": "jielong",
+    "remind": "cuiban",
+    "chase": "cuiban",
+    "summarize": "huizong",
+    "summary": "huizong",
     "status": "status",
+    # pinyin aliases (backward compatible)
+    "jielong": "jielong",
+    "cuiban": "cuiban",
+    "huizong": "huizong",
 }
 
 
@@ -77,7 +80,7 @@ def main():
     if not cmd_raw:
         _print_json({
             "success": False,
-            "error": "缺少指令。可用：发接龙/催办/汇总/状态"
+            "error": "missing command. Available: start / remind / summarize / status"
         })
         raise SystemExit(2)
 
@@ -85,8 +88,8 @@ def main():
     if not action:
         _print_json({
             "success": False,
-            "error": f"不支持的指令: {cmd_raw}",
-            "supported": ["发接龙", "催办", "汇总", "状态"],
+            "error": f"unsupported command: {cmd_raw}",
+            "supported": ["start", "remind", "summarize", "status"],
         })
         raise SystemExit(2)
 

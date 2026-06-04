@@ -63,10 +63,11 @@ JIELONG_TIME = "16:30"
 CUIBAN_TIME = "17:10"
 HUIZONG_TIME = "17:35"
 
-# 指令关键词
-CMD_JIELONG = "接龙"
-CMD_CUIBAN = "催办"
-CMD_HUIZONG = "汇总"
+# 指令关键词 / command keywords
+CMD_JIELONG = "start"
+CMD_CUIBAN = "remind"
+CMD_HUIZONG = "summarize"
+CMD_STATUS = "status"
 
 # 文案配置
 JIELONG_AT_ALL_TEXT = "@所有人"

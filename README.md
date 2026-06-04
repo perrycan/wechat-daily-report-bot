@@ -42,7 +42,7 @@ A clean five-layer separation of concerns:
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│ Command layer   chat command "接龙/催办/汇总/状态" → CLI/API        │  openclaw_command_router.py
+│ Command layer   chat command "start/remind/summarize/status" → CLI/API        │  openclaw_command_router.py
 ├──────────────────────────────────────────────────────────────────┤
 │ API layer       FastAPI :8000  +  schedule timer thread           │  api_server.py
 ├──────────────────────────────────────────────────────────────────┤
@@ -114,8 +114,8 @@ On a real run, log into PC WeChat first and keep its window visible (this is GUI
 |---|---|
 | **Timer** | Auto on workdays: `16:30` start · `17:10` chase · `17:35` summarize |
 | **HTTP API** | `GET /jielong` · `/cuiban` · `/huizong` · `/status` ; `POST /send_msg` ; `GET/POST /rules` |
-| **CLI** | `python openclaw_command_router.py 发接龙\|催办\|汇总\|状态 [--json]` |
-| **Chat command** | Send `接龙/催办/汇总/状态` in WeChat (via the optional ops gateway in `scripts/`) |
+| **CLI** | `python openclaw_command_router.py start\|remind\|summarize\|status [--json]` |
+| **Chat command** | Send `start/remind/summarize/status` in WeChat (via the optional ops gateway in `scripts/`) |
 
 ## Updating the summary rules
 

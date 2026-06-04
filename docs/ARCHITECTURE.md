@@ -8,7 +8,7 @@
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│ 指令层   聊天口令「接龙/催办/汇总/状态」→ /bash 命令 → CLI/API       │  openclaw_command_router.py
+│ 指令层   聊天口令「start/remind/summarize/status」→ /bash 命令 → CLI/API       │  openclaw_command_router.py
 │          （经 scripts/ 的网关补丁，可对接微信 / Telegram）           │
 ├──────────────────────────────────────────────────────────────────┤
 │ 接口层   FastAPI :8000  +  schedule 定时线程（30s 轮询）            │  api_server.py
