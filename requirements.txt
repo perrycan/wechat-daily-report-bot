@@ -1,0 +1,23 @@
+# ===== Core =====
+fastapi>=0.110.0
+uvicorn>=0.30.0
+schedule>=1.2.0
+python-dotenv>=1.0.1
+chinese-calendar>=1.10.0
+
+# ===== Windows GUI 自动化 / GUI automation =====
+pyperclip>=1.8.2
+pyautogui>=0.9.54
+uiautomation>=2.0.29
+
+# ===== 微信自动化后端 / WeChat automation backend =====
+# 按你的微信版本选择安装其一 / pick the one matching your WeChat version:
+#   wxauto    open-source, WeChat 3.9.x   (默认，pip 可装)
+#   wxautox   commercial,  WeChat 3.9.x   (付费授权)
+#   wxautox4  commercial,  WeChat 4.x     (付费授权，推荐，功能最完整)
+wxauto>=3.9.11
+# wxautox>=39.1.42
+# wxautox4>=40.1.11
+
+# ===== 测试 / tests (optional) =====
+# pytest>=8.0.0

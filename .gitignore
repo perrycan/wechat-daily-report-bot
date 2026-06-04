@@ -1,0 +1,34 @@
+# ===== Secrets / local config =====
+.env
+*.key
+*.pem
+
+# ===== Python =====
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+
+# ===== Runtime / logs =====
+wxauto_logs/
+*.log
+
+# ===== OpenClaw patch backups =====
+*.bak
+*.bak.*
+scripts/*.bak*
+
+# ===== Vendored / third-party backend (install via pip instead) =====
+wxauto/
+
+# ===== OS / editor =====
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
