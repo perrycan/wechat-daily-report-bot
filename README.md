@@ -40,7 +40,7 @@ This bot automates all three — accurately, on time, and with a hot-reloadable 
 - 🙋 **Leave-aware chasing** — merges all non-submitters into a single multi-`@` message; never chases the manager, the bot, or anyone who declared leave before the cutoff.
 - 🧠 **LLM summary with hot-reloadable rules** — the summarization prompt lives in an external rules file that is **re-read on every run**; edit the rules and the next summary uses them, no restart/redeploy.
 - 🔁 **Model fallback chain** — `gpt-5.4 → gpt-5.4-mini → deepseek-chat-v3` with transient-error retries and region-unavailable fallback.
-- 🔌 **Three trigger paths** — timer, HTTP API (`/jielong /cuiban /huizong /status`), and a chat command via an optional ops gateway.
+- 🔌 **Three trigger paths** — workday timer, **remote control from Telegram via OpenClaw**, and an HTTP API (`/jielong /cuiban /huizong /status`).
 - 🧪 **DRY-RUN mode** — exercise the API/logic without touching real WeChat.
 
 ## Architecture
@@ -49,10 +49,11 @@ A clean five-layer separation of concerns:
 
 ```mermaid
 flowchart TD
+    PH["Telegram - you, anywhere"]
+    OC["OpenClaw agent - same PC as the bot"]
     T1["Timer - workdays 16:30 / 17:10 / 17:35"]
-    T2["Chat command - start / remind / summarize / status"]
-    T3["HTTP API"]
-    R["openclaw_command_router.py"]
+    T3["HTTP API - /jielong /cuiban /huizong /status"]
+    R["openclaw_command_router.py - start / remind / summarize / status"]
     A["api_server.py - FastAPI + scheduler"]
     C["bot_core.py - start / remind / summarize"]
     W["wxauto / wxautox4 - WeChat GUI automation"]
@@ -61,8 +62,9 @@ flowchart TD
     LLM[("OpenRouter / DeepSeek")]
     WX[("PC WeChat - group + manager DM")]
     CFG[("config.py - roster / times / copy")]
+    PH --> OC
+    OC -->|bash wrapper| R
     T1 --> A
-    T2 --> R
     T3 --> A
     R --> A
     A --> C
@@ -73,7 +75,7 @@ flowchart TD
     W --> WX
     CFG -->|config| C
     classDef trig fill:#1f6feb,color:#ffffff,stroke:#1f6feb;
-    class T1,T2,T3 trig;
+    class PH,OC,T1,T3 trig;
 ```
 
 ### Daily flow
@@ -128,7 +130,7 @@ wechat-daily-report-bot/
 ├── summary_rules.txt            # supplementary rules (hot-updatable)
 ├── rules/
 │   └── summary_fixed_rules.md   # fixed summary rules (hot-reloaded as the LLM system prompt)
-├── scripts/                     # optional ops-gateway patch (chat-command integration)
+├── scripts/                     # OpenClaw remote-trigger patch (Telegram commands)
 ├── docs/                        # architecture, pitfalls, summary-rule methodology
 ├── tests/                       # unit tests for the pure parsing/diff functions
 ├── requirements.txt
@@ -159,7 +161,17 @@ On a real run, log into PC WeChat first and keep its window visible (this is GUI
 | **Timer** | Auto on workdays: `16:30` start · `17:10` chase · `17:35` summarize |
 | **HTTP API** | `GET /jielong` · `/cuiban` · `/huizong` · `/status` ; `POST /send_msg` ; `GET/POST /rules` |
 | **CLI** | `python openclaw_command_router.py start\|remind\|summarize\|status [--json]` |
-| **Chat command** | Send `start/remind/summarize/status` in WeChat (via the optional ops gateway in `scripts/`) |
+| **Remote (Telegram → OpenClaw)** | Send `start` / `remind` / `summarize` / `status` to your OpenClaw assistant from Telegram → it runs on the bot's PC (setup: `scripts/repatch_openclaw_no_prefix.ps1`) |
+
+### Remote control (Telegram → OpenClaw)
+
+The bot runs unattended on a Windows PC, but it is driven from a phone:
+
+1. From **Telegram**, send a one-word command — `start` / `remind` / `summarize` / `status` — to **OpenClaw**, a local AI-assistant agent running on the *same PC* as the bot.
+2. `scripts/repatch_openclaw_no_prefix.ps1` registers those words in OpenClaw and maps each to a `bash` wrapper that runs `python openclaw_command_router.py <action> --json`.
+3. The router calls `bot_core` directly to drive WeChat, and the JSON result flows back to you in Telegram.
+
+So the workday **timer** covers the routine, while **Telegram + OpenClaw** gives off-site, on-demand control — fire the summary early, or re-run a chase on a holiday. OpenClaw is an external, optional component; the timer, CLI and HTTP API all work without it.
 
 ## Updating the summary rules
 

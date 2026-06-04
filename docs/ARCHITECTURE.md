@@ -8,8 +8,8 @@
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│ 指令层   聊天口令「start/remind/summarize/status」→ /bash 命令 → CLI/API       │  openclaw_command_router.py
-│          （经 scripts/ 的网关补丁，可对接微信 / Telegram）           │
+│ 远程层   Telegram → OpenClaw(本机) → bash 包装 → CLI                 │  openclaw_command_router.py
+│          远程下发 start/remind/summarize/status（scripts/ 补丁注册）  │
 ├──────────────────────────────────────────────────────────────────┤
 │ 接口层   FastAPI :8000  +  schedule 定时线程（30s 轮询）            │  api_server.py
 │          /jielong /cuiban /huizong /status /send_msg /rules        │
@@ -41,10 +41,10 @@
 - **做法**：`#接龙` → 微信「编辑接龙表格」发起真接龙卡片；@ 用微信原生能力。
 - **价值**：真提醒、真接龙卡、可解析。
 
-### D. 定时与口令并存
-- **问题**：日常有固定时间，但常有临时补跑需求。
-- **做法**：`schedule` 跑工作日日常；聊天口令负责随时触发，不受时间限制。
-- **价值**：稳定性与灵活性兼得。
+### D. 定时与远程下发并存
+- **问题**：日常有固定时间，但常有临时补跑需求（提前汇总、节假日补催办），而且人不在工位。
+- **做法**：`schedule` 跑工作日日常；**远程**走 Telegram → OpenClaw（与机器人同机的本地 AI 助理）→ `scripts/repatch_openclaw_no_prefix.ps1` 注册的 `bash` 包装 → `openclaw_command_router.py <action>` → 直接调用 `bot_core`，结果回传 Telegram，不受工作日/时间限制。
+- **价值**：稳定性（定时）+ 灵活性（手机随时异地触发）兼得。OpenClaw 为外部可选件，不装也能用定时 / CLI / HTTP API。
 
 ### E. 汇总私发领导 + 群内只回执
 - **问题**：汇总是给管理者看的，误发到群会泄露/尴尬。

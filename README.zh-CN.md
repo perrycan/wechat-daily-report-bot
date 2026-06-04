@@ -39,7 +39,7 @@ English: [README.md](README.md)
 - 🙋 **请假豁免催办**：所有未交者合并为一条多人 `@` 消息；领导、机器人、截止前已请假者永不催。
 - 🧠 **规则热加载的 LLM 汇总**：汇总 Prompt 外置在规则文件，**每次汇总前重新读取**，改规则即时生效，无需重启/发版。
 - 🔁 **模型回退链**：`gpt-5.4 → gpt-5.4-mini → deepseek-chat-v3`，含瞬态错误重试与区域不可用回退。
-- 🔌 **三种触发**：定时、HTTP API（`/jielong /cuiban /huizong /status`）、聊天口令（经可选网关）。
+- 🔌 **三种触发**：工作日定时、**经 OpenClaw 从 Telegram 远程下发**、HTTP API（`/jielong /cuiban /huizong /status`）。
 - 🧪 **DRY-RUN 模式**：不操作真实微信即可联调 API 与逻辑。
 
 ## 架构
@@ -48,10 +48,11 @@ English: [README.md](README.md)
 
 ```mermaid
 flowchart TD
+    PH["Telegram - you, anywhere"]
+    OC["OpenClaw agent - same PC as the bot"]
     T1["Timer - workdays 16:30 / 17:10 / 17:35"]
-    T2["Chat command - start / remind / summarize / status"]
-    T3["HTTP API"]
-    R["openclaw_command_router.py"]
+    T3["HTTP API - /jielong /cuiban /huizong /status"]
+    R["openclaw_command_router.py - start / remind / summarize / status"]
     A["api_server.py - FastAPI + scheduler"]
     C["bot_core.py - start / remind / summarize"]
     W["wxauto / wxautox4 - WeChat GUI automation"]
@@ -60,8 +61,9 @@ flowchart TD
     LLM[("OpenRouter / DeepSeek")]
     WX[("PC WeChat - group + manager DM")]
     CFG[("config.py - roster / times / copy")]
+    PH --> OC
+    OC -->|bash wrapper| R
     T1 --> A
-    T2 --> R
     T3 --> A
     R --> A
     A --> C
@@ -72,7 +74,7 @@ flowchart TD
     W --> WX
     CFG -->|config| C
     classDef trig fill:#1f6feb,color:#ffffff,stroke:#1f6feb;
-    class T1,T2,T3 trig;
+    class PH,OC,T1,T3 trig;
 ```
 
 ### 每日流程
@@ -127,7 +129,7 @@ wechat-daily-report-bot/
 ├── summary_rules.txt            # 补充规则（可热更新）
 ├── rules/
 │   └── summary_fixed_rules.md   # 固定汇总规则（作为 LLM system prompt 热加载）
-├── scripts/                     # 可选的聊天网关补丁（口令集成）
+├── scripts/                     # OpenClaw 远程下发补丁（Telegram 口令）
 ├── docs/                        # 架构、避坑、规则方法论
 ├── tests/                       # 纯解析/比对函数的单元测试
 ├── requirements.txt
@@ -158,7 +160,17 @@ python api_server.py
 | **定时** | 工作日自动：`16:30` 发接龙 · `17:10` 催办 · `17:35` 汇总 |
 | **HTTP API** | `GET /jielong` · `/cuiban` · `/huizong` · `/status`；`POST /send_msg`；`GET/POST /rules` |
 | **CLI** | `python openclaw_command_router.py start\|remind\|summarize\|status [--json]` |
-| **聊天口令** | 微信内发 `start/remind/summarize/status`（经 `scripts/` 中的可选网关补丁） |
+| **远程（Telegram → OpenClaw）** | 从 Telegram 给 OpenClaw 发 `start` / `remind` / `summarize` / `status` → 在机器人电脑上执行（配置：`scripts/repatch_openclaw_no_prefix.ps1`） |
+
+### 远程下发（Telegram → OpenClaw）
+
+机器人在 Windows 电脑上无人值守运行，但可以用手机驱动：
+
+1. 在 **Telegram** 里给 **OpenClaw**（与机器人运行在*同一台电脑*上的本地 AI 助理）发一个词：`start` / `remind` / `summarize` / `status`。
+2. `scripts/repatch_openclaw_no_prefix.ps1` 把这些词注册进 OpenClaw，并映射到一个 `bash` 包装命令，执行 `python openclaw_command_router.py <action> --json`。
+3. 路由器直接调用 `bot_core` 操作微信，执行结果（JSON）再回传到你的 Telegram。
+
+于是：工作日**定时**负责日常，**Telegram + OpenClaw** 负责异地、随时触发——比如提前发汇总，或节假日补一次催办。OpenClaw 是外部可选组件；不装它，定时、CLI、HTTP API 也都能用。
 
 ## 更新汇总规则
 
