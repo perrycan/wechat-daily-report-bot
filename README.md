@@ -13,6 +13,13 @@
 
 > **Note** This is an **anonymized portfolio version** of a real, in-production project. All company names, department names, people, factories, customers and M&A project names have been replaced with fictional placeholders, and all secrets removed.
 
+
+## Demo
+
+![DRY-RUN demo](docs/assets/dry-run-demo.gif)
+
+*`BOT_DRY_RUN=true` — the full **start → remind → summarize** flow running with no real WeChat (names anonymized).*
+
 ---
 
 ## The problem
@@ -33,29 +40,56 @@ This bot automates all three — accurately, on time, and with a hot-reloadable 
 - 🙋 **Leave-aware chasing** — merges all non-submitters into a single multi-`@` message; never chases the manager, the bot, or anyone who declared leave before the cutoff.
 - 🧠 **LLM summary with hot-reloadable rules** — the summarization prompt lives in an external rules file that is **re-read on every run**; edit the rules and the next summary uses them, no restart/redeploy.
 - 🔁 **Model fallback chain** — `gpt-5.4 → gpt-5.4-mini → deepseek-chat-v3` with transient-error retries and region-unavailable fallback.
-- 🔌 **Three trigger paths** — timer, HTTP API (`/jielong /cuiban /huizong /status`), and a Chinese chat command via an optional ops gateway.
+- 🔌 **Three trigger paths** — timer, HTTP API (`/jielong /cuiban /huizong /status`), and a chat command via an optional ops gateway.
 - 🧪 **DRY-RUN mode** — exercise the API/logic without touching real WeChat.
 
 ## Architecture
 
 A clean five-layer separation of concerns:
 
-```
-┌──────────────────────────────────────────────────────────────────┐
-│ Command layer   chat command "start/remind/summarize/status" → CLI/API        │  openclaw_command_router.py
-├──────────────────────────────────────────────────────────────────┤
-│ API layer       FastAPI :8000  +  schedule timer thread           │  api_server.py
-├──────────────────────────────────────────────────────────────────┤
-│ Business layer  start / chase / summarize; parse, diff, send      │  bot_core.py
-├──────────────────────────────────────────────────────────────────┤
-│ Model layer     hot-reload rules → call LLM → management summary   │  llm_summary.py
-├──────────────────────────────────────────────────────────────────┤
-│ WeChat layer    window switch, native roll-call, @, history read   │  wxauto / wxautox4
-└──────────────────────────────────────────────────────────────────┘
-        config.py (group/roster/times/copy)   rules/summary_fixed_rules.md (hot-reloaded prompt)
+```mermaid
+flowchart TD
+    T1["⏰ Timer · workdays<br/>16:30 · 17:10 · 17:35"]:::trig
+    T2["💬 Chat command<br/>start / remind / summarize / status"]:::trig
+    T3["🌐 HTTP API"]:::trig
+    T2 --> R["openclaw_command_router.py"]
+    T1 --> A["api_server.py<br/>FastAPI + scheduler"]
+    T3 --> A
+    R --> A
+    A --> C["bot_core.py<br/>start · remind · summarize"]
+    C --> W["wxauto / wxautox4<br/>WeChat GUI automation"]
+    C --> M["llm_summary.py<br/>hot-reload rules → LLM"]
+    M -. reads each run .-> RULES[("rules/summary_fixed_rules.md<br/>+ summary_rules.txt")]
+    M --> LLM[("OpenRouter / DeepSeek<br/>gpt-5.4 → mini → deepseek")]
+    W --> WX[("PC WeChat<br/>group + manager DM")]
+    CFG[("config.py<br/>roster · times · copy")] -. config .-> C
+    classDef trig fill:#1f6feb,color:#fff,stroke:#1f6feb;
 ```
 
-Full write-up: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+### Daily flow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant S as Scheduler / Command
+    participant B as bot_core
+    participant W as WeChat
+    participant L as LLM
+    participant M as Manager
+    S->>B: 16:30  start
+    B->>W: post native roll-call + @everyone
+    S->>B: 17:10  remind
+    B->>W: read roll-call, diff vs roster
+    B->>W: @ pending (merged, leave-aware)
+    S->>B: 17:35  summarize
+    B->>W: extract latest roll-call
+    B->>L: roll-call + hot-reloaded rules
+    L-->>B: management-grade summary
+    B-->>M: send summary privately
+    B->>W: post "done" receipt to group
+```
+
+Layers map to files: `openclaw_command_router.py` (command) · `api_server.py` (API + timer) · `bot_core.py` (business) · `llm_summary.py` (model) · `wxauto`/`wxautox4` (WeChat). Full write-up: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Engineering highlights
 

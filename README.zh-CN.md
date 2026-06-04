@@ -12,6 +12,13 @@ English: [README.md](README.md)
 
 > **说明** 本仓库是一个**真实在用项目的脱敏作品版**。公司、科室、人名、工厂、客户、并购项目名均已替换为虚构占位，所有密钥已移除。
 
+
+## 演示
+
+![DRY-RUN 演示](docs/assets/dry-run-demo.gif)
+
+*`BOT_DRY_RUN=true` 模式：完整跑通 **start → remind → summarize**，全程不操作真实微信（数据已脱敏）。*
+
 ---
 
 ## 解决的问题
@@ -32,29 +39,56 @@ English: [README.md](README.md)
 - 🙋 **请假豁免催办**：所有未交者合并为一条多人 `@` 消息；领导、机器人、截止前已请假者永不催。
 - 🧠 **规则热加载的 LLM 汇总**：汇总 Prompt 外置在规则文件，**每次汇总前重新读取**，改规则即时生效，无需重启/发版。
 - 🔁 **模型回退链**：`gpt-5.4 → gpt-5.4-mini → deepseek-chat-v3`，含瞬态错误重试与区域不可用回退。
-- 🔌 **三种触发**：定时、HTTP API（`/jielong /cuiban /huizong /status`）、中文聊天口令（经可选网关）。
+- 🔌 **三种触发**：定时、HTTP API（`/jielong /cuiban /huizong /status`）、聊天口令（经可选网关）。
 - 🧪 **DRY-RUN 模式**：不操作真实微信即可联调 API 与逻辑。
 
 ## 架构
 
 清晰的五层职责分离：
 
-```
-┌──────────────────────────────────────────────────────────────────┐
-│ 指令层   聊天口令「start/remind/summarize/status」→ CLI/API                    │  openclaw_command_router.py
-├──────────────────────────────────────────────────────────────────┤
-│ 接口层   FastAPI :8000  +  schedule 定时线程                        │  api_server.py
-├──────────────────────────────────────────────────────────────────┤
-│ 业务层   发接龙 / 催办 / 汇总；解析、比对、发送                       │  bot_core.py
-├──────────────────────────────────────────────────────────────────┤
-│ 模型层   热加载规则 → 调用 LLM → 管理口径汇总                        │  llm_summary.py
-├──────────────────────────────────────────────────────────────────┤
-│ 微信层   窗口切换、原生接龙、@、聊天记录读取                          │  wxauto / wxautox4
-└──────────────────────────────────────────────────────────────────┘
-        config.py（群/花名册/时间/文案）   rules/summary_fixed_rules.md（热加载的 Prompt）
+```mermaid
+flowchart TD
+    T1["⏰ Timer · workdays<br/>16:30 · 17:10 · 17:35"]:::trig
+    T2["💬 Chat command<br/>start / remind / summarize / status"]:::trig
+    T3["🌐 HTTP API"]:::trig
+    T2 --> R["openclaw_command_router.py"]
+    T1 --> A["api_server.py<br/>FastAPI + scheduler"]
+    T3 --> A
+    R --> A
+    A --> C["bot_core.py<br/>start · remind · summarize"]
+    C --> W["wxauto / wxautox4<br/>WeChat GUI automation"]
+    C --> M["llm_summary.py<br/>hot-reload rules → LLM"]
+    M -. reads each run .-> RULES[("rules/summary_fixed_rules.md<br/>+ summary_rules.txt")]
+    M --> LLM[("OpenRouter / DeepSeek<br/>gpt-5.4 → mini → deepseek")]
+    W --> WX[("PC WeChat<br/>group + manager DM")]
+    CFG[("config.py<br/>roster · times · copy")] -. config .-> C
+    classDef trig fill:#1f6feb,color:#fff,stroke:#1f6feb;
 ```
 
-完整说明见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)。
+### 每日流程
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant S as Scheduler / Command
+    participant B as bot_core
+    participant W as WeChat
+    participant L as LLM
+    participant M as Manager
+    S->>B: 16:30  start
+    B->>W: post native roll-call + @everyone
+    S->>B: 17:10  remind
+    B->>W: read roll-call, diff vs roster
+    B->>W: @ pending (merged, leave-aware)
+    S->>B: 17:35  summarize
+    B->>W: extract latest roll-call
+    B->>L: roll-call + hot-reloaded rules
+    L-->>B: management-grade summary
+    B-->>M: send summary privately
+    B->>W: post "done" receipt to group
+```
+
+各层对应文件：`openclaw_command_router.py`（指令）· `api_server.py`（接口 + 定时）· `bot_core.py`（业务）· `llm_summary.py`（模型）· `wxauto`/`wxautox4`（微信）。完整说明见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)。
 
 ## 工程亮点
 
