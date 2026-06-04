@@ -49,21 +49,31 @@ A clean five-layer separation of concerns:
 
 ```mermaid
 flowchart TD
-    T1["⏰ Timer · workdays<br/>16:30 · 17:10 · 17:35"]:::trig
-    T2["💬 Chat command<br/>start / remind / summarize / status"]:::trig
-    T3["🌐 HTTP API"]:::trig
-    T2 --> R["openclaw_command_router.py"]
-    T1 --> A["api_server.py<br/>FastAPI + scheduler"]
+    T1["Timer - workdays 16:30 / 17:10 / 17:35"]
+    T2["Chat command - start / remind / summarize / status"]
+    T3["HTTP API"]
+    R["openclaw_command_router.py"]
+    A["api_server.py - FastAPI + scheduler"]
+    C["bot_core.py - start / remind / summarize"]
+    W["wxauto / wxautox4 - WeChat GUI automation"]
+    M["llm_summary.py - hot-reload rules to LLM"]
+    RULES[("summary rules: md + txt")]
+    LLM[("OpenRouter / DeepSeek")]
+    WX[("PC WeChat - group + manager DM")]
+    CFG[("config.py - roster / times / copy")]
+    T1 --> A
+    T2 --> R
     T3 --> A
     R --> A
-    A --> C["bot_core.py<br/>start · remind · summarize"]
-    C --> W["wxauto / wxautox4<br/>WeChat GUI automation"]
-    C --> M["llm_summary.py<br/>hot-reload rules → LLM"]
-    M -. reads each run .-> RULES[("rules/summary_fixed_rules.md<br/>+ summary_rules.txt")]
-    M --> LLM[("OpenRouter / DeepSeek<br/>gpt-5.4 → mini → deepseek")]
-    W --> WX[("PC WeChat<br/>group + manager DM")]
-    CFG[("config.py<br/>roster · times · copy")] -. config .-> C
-    classDef trig fill:#1f6feb,color:#fff,stroke:#1f6feb;
+    A --> C
+    C --> W
+    C --> M
+    M -->|reads each run| RULES
+    M --> LLM
+    W --> WX
+    CFG -->|config| C
+    classDef trig fill:#1f6feb,color:#ffffff,stroke:#1f6feb;
+    class T1,T2,T3 trig;
 ```
 
 ### Daily flow
@@ -71,22 +81,22 @@ flowchart TD
 ```mermaid
 sequenceDiagram
     autonumber
-    participant S as Scheduler / Command
+    participant S as Trigger
     participant B as bot_core
     participant W as WeChat
     participant L as LLM
     participant M as Manager
-    S->>B: 16:30  start
-    B->>W: post native roll-call + @everyone
-    S->>B: 17:10  remind
+    S->>B: 16:30 start
+    B->>W: post native roll-call and at-everyone
+    S->>B: 17:10 remind
     B->>W: read roll-call, diff vs roster
-    B->>W: @ pending (merged, leave-aware)
-    S->>B: 17:35  summarize
+    B->>W: at-mention pending, merged and leave-aware
+    S->>B: 17:35 summarize
     B->>W: extract latest roll-call
-    B->>L: roll-call + hot-reloaded rules
+    B->>L: roll-call plus hot-reloaded rules
     L-->>B: management-grade summary
     B-->>M: send summary privately
-    B->>W: post "done" receipt to group
+    B->>W: post done receipt to group
 ```
 
 Layers map to files: `openclaw_command_router.py` (command) · `api_server.py` (API + timer) · `bot_core.py` (business) · `llm_summary.py` (model) · `wxauto`/`wxautox4` (WeChat). Full write-up: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
