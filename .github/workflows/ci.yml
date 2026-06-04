@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install test dependencies
+        # 单元测试只覆盖纯函数（解析/比对），仅需 pytest；
+        # 微信后端与 GUI 依赖是 Windows 专用，不在 CI 内安装。
+        run: python -m pip install --upgrade pip pytest
+
+      - name: Run unit tests
+        run: pytest -q
