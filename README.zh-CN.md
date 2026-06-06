@@ -40,7 +40,7 @@ English: [README.md](README.md)
 - 🧠 **规则热加载的 LLM 汇总**：汇总 Prompt 外置在规则文件，**每次汇总前重新读取**，改规则即时生效，无需重启/发版。
 - 🔁 **模型回退链**：`gpt-5.4 → gpt-5.4-mini → deepseek-chat-v3`，含瞬态错误重试与区域不可用回退。
 - 🔌 **三种触发**：工作日定时、**经 OpenClaw 从 Telegram 远程下发**、HTTP API（`/jielong /cuiban /huizong /status`）。
-- 🧪 **DRY-RUN 模式**：不操作真实微信即可联调 API 与逻辑。
+- 🧪 **DRY-RUN 模式**：不操作真实微信即可联调 API 与逻辑。`remind` 与 `summarize` 可端到端运行；`start` 会按设计降级为无操作失败，因为 dry-run 桩没有真实微信接龙输入框（`ChatBox.editbox`）。
 
 ## 架构
 

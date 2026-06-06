@@ -41,7 +41,7 @@ This bot automates all three — accurately, on time, and with a hot-reloadable 
 - 🧠 **LLM summary with hot-reloadable rules** — the summarization prompt lives in an external rules file that is **re-read on every run**; edit the rules and the next summary uses them, no restart/redeploy.
 - 🔁 **Model fallback chain** — `gpt-5.4 → gpt-5.4-mini → deepseek-chat-v3` with transient-error retries and region-unavailable fallback.
 - 🔌 **Three trigger paths** — workday timer, **remote control from Telegram via OpenClaw**, and an HTTP API (`/jielong /cuiban /huizong /status`).
-- 🧪 **DRY-RUN mode** — exercise the API/logic without touching real WeChat.
+- 🧪 **DRY-RUN mode** — exercise the API/logic without touching real WeChat. `remind` and `summarize` run end-to-end, while `start` intentionally degrades to a no-op failure because the dry-run stub has no native WeChat roll-call input box (`ChatBox.editbox`).
 
 ## Architecture
 
